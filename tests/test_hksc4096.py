@@ -42,6 +42,18 @@ class TestHKSC4096(unittest.TestCase):
         p2 = HKSCPlanner(b"seed", cfg).run_transcript(256)
         self.assertEqual(p1, p2)
 
+    def test_legacy_magic_accepted(self):
+        import hmac, hashlib
+        cipher = HKSC4096Cipher("good")
+        ct = cipher.encrypt(b"compat", **self.base)
+        salt = ct[5:21]
+        body = ct[62:-32]
+        legacy_header = b"HKSC1" + ct[5:62]
+        master = cipher._derive_master_key(salt)
+        legacy_tag = hmac.new(master[64:96], legacy_header + body, hashlib.sha3_256).digest()
+        legacy = legacy_header + body + legacy_tag
+        self.assertEqual(cipher.decrypt(legacy), b"compat")
+
 
 if __name__ == "__main__":
     unittest.main()

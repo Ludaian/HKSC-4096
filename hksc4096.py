@@ -25,6 +25,7 @@ CUBE_SIDE = 16
 BLOCK_SIZE = CUBE_SIDE**3  # 4096
 SURFACE_CELLS = 6 * CUBE_SIDE * CUBE_SIDE  # 1536 stickers on 6 faces for 16x16
 MAGIC = b"HKSC2"
+LEGACY_MAGIC = b"HKSC1"
 
 
 def _index_to_xyz(index: int) -> tuple[int, int, int]:
@@ -283,7 +284,8 @@ class HKSC4096Cipher:
             raise HKSCError("Ciphertext too short")
 
         pos = 0
-        if ciphertext[: len(MAGIC)] != MAGIC:
+        magic = ciphertext[: len(MAGIC)]
+        if magic not in (MAGIC, LEGACY_MAGIC):
             raise HKSCError("Invalid magic")
         pos += len(MAGIC)
 
