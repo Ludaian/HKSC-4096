@@ -82,9 +82,10 @@ python -m unittest discover -s tests -v
 
 ## 7) Security pipeline (expanded)
 
-- `contract-security.yml`: Slither + Echidna + Mythril + Manticore in one pipeline.
+- `ci-security-full.yml`: Slither + Echidna + Mythril (CI gatekeeper full mode).
+- `contract-security.yml`: Slither + Echidna + Mythril + Manticore (extended analysis).
 - `codeql.yml`: code scanning for Python + JavaScript/TypeScript.
-- `.github/dependabot.yml`: weekly dependency updates for GitHub Actions + npm.
+- `.github/dependabot.yml`: automated dependency updates (daily npm/pip, weekly Actions).
 
 ## 8) Enable repository security alerts (GitHub settings)
 
@@ -103,3 +104,8 @@ In **Settings → Security & analysis**, enable:
 - `.github/workflows/autonomous-control-loop.yml`: scheduled every 6h to generate autonomy report artifact.
 
 > Mặc định dùng **safe-autonomy**: tự động giám sát/cải tiến/đề xuất và tự xử lý low-risk; các hành động high-risk vẫn yêu cầu escalation.
+
+
+## 10) GitHub native security setup
+
+- Xem `docs/SECURITY_SETUP.md` để bật Code Scanning, Security Alerts và Branch Protection.

@@ -1,48 +1,41 @@
 # HKSC-4096 Architecture
 
-## Overview
-HKSC-4096 is organized into separable layers so crypto core, API bridge, and blockchain integrations can evolve independently.
+## 1. High-Level Overview
+HKSC-4096 là một cryptographic primitive thực nghiệm dựa trên:
+- Siêu-Rubik `16×16×16` supercube (`4096` cells 3D)
+- 3D Knight Tour/Permutation có khóa
+- Planner transcript deterministic để bind ngữ nghĩa cấu hình vào ciphertext
+- Contract verifier scaffold để tích hợp zk-proof on-chain trong roadmap
+- Security CI/CD (Slither, Echidna, Mythril, Manticore, CodeQL)
 
-## Layers
-1. **Core cryptosystem (`hksc4096.py`)**
-   - `HKSC4096Cipher`: authenticated block encryption over 4096-byte blocks.
-   - `HKSCPlanner`: deterministic transcript generator encoding scheduling parameters (piece, agents, ratio mode, dynamic schedule, adversarial cadence).
-   - Planner hash is bound in ciphertext header to prevent silent config drift.
+> Ghi chú kỹ thuật: repo hiện dùng mô hình hash-chain abstraction ở lớp planner; các mục như self-solving hoàn chỉnh/zk production/mainnet verifier là roadmap có kiểm soát, không auto bật mặc định.
 
-2. **Integration bridge (`hksc_bridge.py`)**
-   - Flask API factory for desktop/web frontends.
-   - Endpoints for simulation/encrypt/decrypt with JSON payloads + Base64 transport.
+## 2. Core Components
+- **Private secret**: passphrase người vận hành + salt/nonce ngẫu nhiên.
+- **Public metadata**: header gồm `magic`, `salt`, `nonce`, `rounds`, `planner_hash`, `original_len`.
+- **State**: planner digest (SHA3-based) + permutation 3D keyed.
+- **Twist/ratio semantics**: do `PlannerConfig` điều khiển (`piece`, `agents`, `ratio_mode`, `dynamic_schedule`, adversarial cadence).
 
-3. **Verifier integration (`hksc_web3.py`)**
-   - ABI loading + proof normalization.
-   - Optional on-chain-compatible `verifyProof` call using `eth_call`.
+## 3. Security Assumptions
+- Độ khó thực tế dựa trên phối hợp KDF + keyed permutation + authenticated transcript binding.
+- Ciphertext integrity dựa trên `HMAC-SHA3-256`.
+- Planner mismatch bị chặn tại decrypt nhờ `planner_hash`.
+- Mô hình hiện tại là R&D; chưa có chứng minh formal reduction hoàn chỉnh.
 
-4. **Contract scaffold (`hksc-verifier-contract`)**
-   - Placeholder verifier contract and deploy script for pipeline wiring.
-   - Must be replaced by generated Groth16 verifier before production.
+## 4. Pipeline CI/CD
+- Python tests gate (`python-tests.yml`)
+- Slither gatekeeper (`ci-slither.yml`)
+- Full contract security (`ci-security-full.yml`): Slither + Echidna + Mythril
+- Extended contract analysis (`contract-security.yml`): Slither + Echidna + Mythril + Manticore
+- Code scanning (`codeql.yml`)
+- Dependabot updates (`.github/dependabot.yml`)
 
-## Data flow
-1. User provides passphrase + planner config.
-2. `scrypt` derives master key.
-3. Planner transcript digest is derived and mixed into per-round keystream.
-4. 3D keyed knight permutation + substitution rounds produce ciphertext body.
-5. Header includes planner hash and metadata.
-6. HMAC-SHA3-256 authenticates header+body.
+## 5. Deployment
+- Verifier contract: hiện là scaffold (`hksc-verifier-contract/contracts/HKSC_Verifier.sol`)
+- Production path:
+  1. Export verifier từ `snarkjs`
+  2. Replace scaffold
+  3. Run security pipeline + manual review
+  4. Deploy testnet trước, mainnet sau khi audit
 
-## Security boundaries
-- Core cipher can run without Flask/web3 dependencies.
-- Web3 is lazy-imported to avoid implicit chain/network coupling.
-- Placeholder smart contract is intentionally non-production and clearly marked.
-
-## CI/Security pipeline
-- Python unit tests workflow for functional regressions.
-- Contract security workflow combining Slither + Echidna + Mythril.
-- CodeQL code scanning workflow for Python + JavaScript.
-- Dependabot for GitHub Actions and npm ecosystem updates.
-
-
-## Autonomous Development Plan (Guarded)
-- `automation/policy.yaml` defines decision boundaries, escalation rules, and worst-case simulation lanes.
-- `automation/autonomy_engine.py` runs health checks, simulation checks, and emits machine-readable status reports.
-- `.github/workflows/autonomous-control-loop.yml` executes every 6 hours to continuously monitor and recommend next actions.
-- The system is intentionally **safe-autonomy**: it can suggest/prepare low-risk actions, but high-risk domains still require human escalation.
+**Full math/security discussion**: xem `docs/WHITEPAPER.md`.

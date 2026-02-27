@@ -1,0 +1,70 @@
+name: Full Security Pipeline (Slither + Echidna + Mythril)
+
+on:
+  push:
+    branches: [main, dev]
+    paths: ['hksc-verifier-contract/**']
+  pull_request:
+    branches: [main, dev]
+    paths: ['hksc-verifier-contract/**']
+  workflow_dispatch:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Slither + Autofix
+        id: slither
+        uses: crytic/slither-action@v0.4.2
+        with:
+          target: 'hksc-verifier-contract/contracts/'
+          slither-args: '--autofix --fail-high --exclude-dependencies'
+          sarif: 'slither.sarif'
+
+      - name: Upload Slither SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'slither.sarif'
+
+      - name: Run Echidna Fuzzing
+        uses: crytic/echidna-action@v2
+        with:
+          files: hksc-verifier-contract/contracts/HKSC_Verifier.sol
+          contract: HKSC_Verifier
+          config: hksc-verifier-contract/echidna.yaml
+
+      - name: Setup Python for Mythril
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Mythril
+        run: |
+          python -m pip install --upgrade pip
+          pip install mythril
+
+      - name: Run Mythril
+        run: |
+          myth analyze hksc-verifier-contract/contracts/HKSC_Verifier.sol --solv 0.8.24 --execution-timeout 300 -o json > mythril-full.json
+
+      - name: Upload Mythril report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mythril-full-report
+          path: mythril-full.json
+          retention-days: 14
+
+      - name: Create autofix PR
+        if: steps.slither.outputs.changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: autofix-security
+          title: "🔧 Auto-fix: Full Security Pipeline"
+          labels: autofix,security

@@ -1,69 +1,57 @@
-# HKSC-4096 Whitepaper (Engineering Draft)
+# HKSC-4096: HyperKnight Supercube Cryptosystem
+**A Post-Quantum-Oriented Experimental Primitive based on 3D Knight Permutation on 16³ Supercube**
+
+**Version 1.0 – February 2026**  
+**Author**: HKSC contributors  
+**Project**: HKSC-4096
 
 ## Abstract
-HKSC-4096 is an experimental cryptographic construction that combines a 4096-cell supercube permutation model with a deterministic planner transcript to provide configurable domain separation. The system aims to be practical for experimentation while preserving deterministic replay for verification, simulation, and integration workflows.
+We present HKSC-4096, an experimental cryptographic construction combining:
+- a 16×16×16 supercube permutation space,
+- deterministic planner transcript binding,
+- authenticated encryption pipeline,
+- optional on-chain verification integration,
+- CI-first security operations.
 
-## Design goals
-- Deterministic reproducibility for encryption/decryption under explicit planner configuration.
-- Strict authentication failure on passphrase mismatch or planner mismatch.
-- Practical integration paths (CLI, Flask API, contract verification scaffolding).
-- Security-first pipeline support (static analysis, fuzzing, symbolic analysis, code scanning).
+The design target is reproducible experimentation and operational hardening, while avoiding unsafe fully-autonomous high-risk actions.
 
-## Threat model (current)
-The system defends against:
-- Passive eavesdroppers reading ciphertext.
-- Active tampering of ciphertext/header.
-- Configuration drift between encrypt/decrypt environments.
+## 1. Introduction
+HKSC-4096 is designed as a practical R&D platform where cryptographic core, simulation/planner semantics, and integration layers can evolve independently. The main objective is deterministic reproducibility under explicit planner configuration.
 
-The system does **not** claim formal proof security or replacement for audited standardized AEAD.
+## 2. Mathematical Foundation (Engineering Level)
+- Supercube index space: `16^3 = 4096` cells.
+- Knight offset family in 3D for permutation walk candidates.
+- Planner-driven deterministic transcript digest (SHA3 chain).
+- Cipher rounds combining substitution and keyed permutation.
+- Integrity via HMAC over header+body.
 
-## Cryptographic composition
-1. **KDF**: `scrypt(passphrase, salt)` derives key material.
-2. **Permutation**: keyed 3D knight-walk over 16×16×16 coordinate space with fallback coverage.
-3. **Round transform**: substitution + XOR keystream.
-4. **Authentication**: HMAC-SHA3-256 over header+body.
-5. **Planner binding**: planner configuration hash embedded in ciphertext header.
+## 3. Security Analysis (Current Scope)
+- Brute-force resistance is dominated by passphrase/KDF strength and authenticated transform chain.
+- Tampering is detected by HMAC.
+- Config drift is detected by planner hash binding.
+- ML/quantum resistance claims are exploratory and **not** treated as proven guarantees.
 
-## Planner model
-Planner digest is deterministic over:
-- piece mobility class,
-- agent count,
-- ratio mode (`equal`, `knight_less`, `knight_more`, `dynamic`),
-- dynamic schedule segments,
-- adversarial timing settings.
+## 4. Implementation
+- Python core: `hksc4096.py`
+- API bridge: `hksc_bridge.py`
+- Web3 helper: `hksc_web3.py`
+- Contract scaffold + deploy skeleton: `hksc-verifier-contract/`
+- Security workflows: Slither, Echidna, Mythril, Manticore, CodeQL
 
-Planner digest is mixed into keystream derivation and delta evolution, making ciphertext dependent on planner semantics.
+## 5. Use Cases
+- Experimental data vault encryption with deterministic simulation semantics.
+- Planner-bound reproducible encryption/decryption testing.
+- Security research pipeline for verifier contracts before production deployment.
 
-## Interoperability
-- CLI supports encrypt/decrypt/simulate/serve.
-- Flask bridge supports JSON APIs for UI tooling.
-- Web3 helper supports ABI-driven verifier invocation.
-- Contract scaffold supports future replacement with generated Groth16 verifier.
+## 6. Governance & Safety
+HKSC-4096 applies guarded automation:
+- low-risk automation allowed (tests/docs/non-prod CI updates),
+- high-risk actions (mainnet deploy, secrets mutation, destructive ops) require human escalation.
 
-## Security operations
-Recommended baseline:
-- Enforce branch protections.
-- Require passing unit tests + security workflows.
-- Enable Dependabot alerts + secret scanning + code scanning.
-- Replace placeholder verifier before any public deployment.
+## References
+- Rubik/supercube combinatorics literature
+- Knight tour graph literature
+- VDF and zk-proof engineering references
+- Solidity static/symbolic/fuzz tooling docs
 
-## Limitations and roadmap
-- No formal reduction proof.
-- Planner currently hash-chain abstraction (not full Rubik group solver).
-- Smart contract currently placeholder.
-
-Roadmap:
-1. Generated verifier contract + ABI pinning.
-2. Cross-language test vectors.
-3. Formal serialization spec.
-4. Third-party audit.
-
-
-## Operational Autonomy Model
-HKSC-4096 now includes a guarded autonomy loop for:
-- continuous monitoring,
-- automatic repair proposals,
-- adaptive worst-case simulations,
-- progressive optimization recommendations.
-
-Full decision delegation is constrained by policy: production secrets, irreversible migrations, and mainnet deploy actions remain human-gated.
+**License**: MIT (repository default).
