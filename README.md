@@ -9,10 +9,6 @@ Bản này nâng cấp theo hướng **có thể sử dụng thực tế** và n
 - CI workflows cho Python test + Slither gatekeeper,
 - Scaffold contract verifier để thay bằng bản xuất từ `snarkjs`.
 
-## Merge-conflict note
-
-- README/hksc4096.py/tests được đồng bộ cùng một phiên bản CLI+header để giảm xung đột khi rebase/merge.
-
 ## 1) Core crypto
 
 `hksc4096.py` gồm:
